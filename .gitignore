@@ -3,6 +3,10 @@ cdb_list.txt
 comparison_blocklist.txt
 processed_ips.csv
 
+# test files
+test.py
+test.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

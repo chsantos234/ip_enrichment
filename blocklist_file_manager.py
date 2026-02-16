@@ -58,7 +58,7 @@ class BlocklistFileManager:
             if updated:
                 print("updating existing csv file...")
                 
-                new_ips = pd.read_csv(FORMATTED_FILE, header=None, names=["ip"])
+                new_ips = pd.read_csv(RAW_FILE, header=None, names=["ip"])
                 new_ips["active"] = True
                 new_ips["upload_date"] = None
                 
@@ -84,6 +84,7 @@ class BlocklistFileManager:
         print("creating a new csv file...")
         df = (pd.read_csv(RAW_FILE, header=None, skip_blank_lines=True, names=["ip"]).drop_duplicates().reset_index(drop=True))
         df["active"] = True
+        df['score'] = -1
         df['tags'] = None
         df["upload_date"] = None
 
