@@ -32,19 +32,19 @@ class BlocklistFileManager:
         response.raise_for_status()
         remote_text = response.text
         remote_hash = BlocklistFileManager.sha256_from_text(remote_text)
+        local_hash = None
 
         if RAW_FILE.exists():
             local_text = RAW_FILE.read_text(encoding="utf-8")
             local_hash = BlocklistFileManager.sha256_from_text(local_text)
-        else:
-            local_hash = None
-            print("creating a new local file...")
+        else: print("creating new local files...")
 
         if remote_hash != local_hash:
             print('remote file has changed, updating local file...')
             RAW_FILE.write_text(remote_text, encoding="utf-8")
             FORMATTED_FILE.write_text(BlocklistFileManager.format_text(remote_text), encoding="utf-8")
             return True
+        
         print("local file is up to date")
         return False
     
