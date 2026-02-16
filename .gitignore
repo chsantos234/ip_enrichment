@@ -1,3 +1,8 @@
+# local files
+cdb_list.txt
+comparison_blocklist.txt
+processed_ips.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

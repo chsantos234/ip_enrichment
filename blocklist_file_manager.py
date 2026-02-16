@@ -84,8 +84,8 @@ class BlocklistFileManager:
         print("creating a new csv file...")
         df = (pd.read_csv(RAW_FILE, header=None, skip_blank_lines=True, names=["ip"]).drop_duplicates().reset_index(drop=True))
         df["active"] = True
-        df["upload_date"] = None
         df['tags'] = None
+        df["upload_date"] = None
 
         df.to_csv(PROCESSED_IP_FILE, index=False)
         if return_csv:return df
