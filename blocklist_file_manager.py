@@ -117,7 +117,7 @@ class BlocklistFileManager:
                 
                 df.loc[df["ip"].isin(ips_to_deactivate), "active"] = False
 
-                # Reactivate reappearing IPs - remove prevous info? is necessary to update?
+                # Reactivate reappearing IPs - remove prevous info? is necessary to update before threshold?? 
                 ips_to_reactivate = new_ips_set & set(df[df["active"] == False]["ip"])
 
                 if ips_to_reactivate:
