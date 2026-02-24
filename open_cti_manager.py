@@ -42,7 +42,7 @@ class OpenCTIManager:
         )
 
 
-    def get_observable_by_value(self,
+    def get_observable_by_value(self, #TODO: fix
         value: str
     ) -> dict | None:
         """
@@ -50,4 +50,14 @@ class OpenCTIManager:
         """
         return self.observable.read(
             filters=[{"key": "value", "values": [value]}]
+        )
+
+    def get_observable_by_stix_id(self,
+        stix_id: str
+    ) -> dict | None:
+        """
+        Retrieve observable by STIX ID.
+        """
+        return self.observable.read(
+            id=stix_id
         )

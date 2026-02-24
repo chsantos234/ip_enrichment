@@ -7,8 +7,8 @@ from dotenv import dotenv_values
 
 config = dotenv_values(".env")
 
-RAW_FILE = Path(config["SERPRO_RAW_FILE_PATH"])
-FORMATTED_FILE = Path(config["SERPRO_FORMATTED_FILE_PATH"])
+RAW_FILE = Path(config["RAW_FILE_PATH"])
+FORMATTED_FILE = Path(config["FORMATTED_FILE_PATH"])
 PROCESSED_IP_FILE = Path(config["PROCESSED_IP_FILE_PATH"])
 
 class BlocklistFileManager:
@@ -28,7 +28,7 @@ class BlocklistFileManager:
     @staticmethod
     def update_local_file() -> bool:
         #_ = sys.stdin.read()
-        response = requests.get(config["SERPRO_BLOCKLIST_URL"], timeout=30)
+        response = requests.get(config["BLOCKLIST_URL"], timeout=30)
         response.raise_for_status()
         remote_text = response.text
         remote_hash = BlocklistFileManager.sha256_from_text(remote_text)
@@ -48,6 +48,57 @@ class BlocklistFileManager:
         print("local file is up to date")
         return False
     
+    @staticmethod
+    def get_n_active_ips(n: int) -> list[str]:
+        """
+        Return the first `n` IPs where active is True.
+        """
+        if not PROCESSED_IP_FILE.exists():
+            raise FileNotFoundError("Processed IP file not found.")
+
+        df = pd.read_csv(PROCESSED_IP_FILE)
+        #TODO: if upload date is within the last 30 days, do not return the IP 
+        active_ips = df[df["active"] == True]["ip"].head(n)
+
+        return active_ips.tolist()
+    
+
+    @staticmethod
+    def update_ip_info(observable: dict) -> None:
+        ip = observable["observable_value"]
+
+        tags = [label["value"] for label in observable["objectLabel"]]
+
+        #df = pd.read_csv(PROCESSED_IP_FILE)
+        df = BlocklistFileManager.load_processed_df()
+        df.loc[df["ip"] == ip, "upload_date"] = str(pd.to_datetime(observable["updated_at"],utc=True,unit="s"))
+        df.loc[df["ip"] == ip, "standard_id"] = observable["standard_id"]
+        df.loc[df["ip"] == ip, "stix_id"] = observable["standard_id"]
+        df.loc[df["ip"] == ip, "score"] = observable['x_opencti_score']
+        df.loc[df["ip"] == ip, "tags"] = ",".join(tags) if tags else None
+
+        df.to_csv(PROCESSED_IP_FILE, index=False)
+
+    @staticmethod
+    def load_processed_df() -> pd.DataFrame:
+        df = pd.read_csv(PROCESSED_IP_FILE)
+
+        df["active"] = df["active"].astype(bool)
+        df["score"] = pd.to_numeric(df["score"], errors="coerce")
+        df["upload_date"] = df["upload_date"].astype(str)
+        df['stix_id'] = df['stix_id'].astype(str)
+        df["tags"] = df["tags"].astype("string").fillna("")
+
+
+        #df["upload_date"] = pd.to_datetime(
+        #    df["upload_date"],
+        #    errors="coerce",
+        #    utc=True
+        #)
+
+        return df
+
+
     @staticmethod
     def update_local_csv(return_csv : bool=False) -> pd.DataFrame | None:
         updated = BlocklistFileManager.update_local_file()
@@ -71,7 +122,7 @@ class BlocklistFileManager:
                 
                 df.loc[df["ip"].isin(ips_to_deactivate), "active"] = False
 
-                # Reactivate reappearing IPs
+                # Reactivate reappearing IPs - remove prevous info? is necessary to update?
                 ips_to_reactivate = new_ips_set & set(df[df["active"] == False]["ip"])
 
                 if ips_to_reactivate:
@@ -84,9 +135,10 @@ class BlocklistFileManager:
         print("creating a new csv file...")
         df = (pd.read_csv(RAW_FILE, header=None, skip_blank_lines=True, names=["ip"]).drop_duplicates().reset_index(drop=True))
         df["active"] = True
+        df['stix_id'] = "None"
         df['score'] = -1
-        df['tags'] = None
-        df["upload_date"] = None
+        df['tags'] = "None"
+        df["upload_date"] = "None"
 
         df.to_csv(PROCESSED_IP_FILE, index=False)
         if return_csv:return df
