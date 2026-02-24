@@ -13,6 +13,9 @@ class OpenCTIManager:
 
         self.observable = StixCyberObservable(self.client)
 
+    ########################
+    # ------- Client -------
+    ########################
 
     def post_label(self,
         label_value: str,
@@ -25,7 +28,11 @@ class OpenCTIManager:
             value=label_value,
             color=label_color
         )
+    
 
+    ########################
+    # ---- Observables ----
+    ########################
 
     def put_observable(self,
         observable_input: dict,

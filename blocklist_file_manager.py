@@ -1,9 +1,9 @@
 import hashlib
 import requests
-#import ipaddress
 import pandas as pd
 from pathlib import Path
 from dotenv import dotenv_values
+from datetime import datetime, timezone
 
 config = dotenv_values(".env")
 
@@ -27,7 +27,6 @@ class BlocklistFileManager:
 
     @staticmethod
     def update_local_file() -> bool:
-        #_ = sys.stdin.read()
         response = requests.get(config["BLOCKLIST_URL"], timeout=30)
         response.raise_for_status()
         remote_text = response.text
@@ -49,16 +48,21 @@ class BlocklistFileManager:
         return False
     
     @staticmethod
-    def get_n_active_ips(n: int) -> list[str]:
+    def get_n_active_ips(n: int,threshold: int) -> list[str]:
         """
-        Return the first `n` IPs where active is True.
+        Return the first `n` IPs where:
+        - active is True,
+        - upload date is within the last `threshold` days.
         """
         if not PROCESSED_IP_FILE.exists():
             raise FileNotFoundError("Processed IP file not found.")
 
-        df = pd.read_csv(PROCESSED_IP_FILE)
-        #TODO: if upload date is within the last 30 days, do not return the IP 
-        active_ips = df[df["active"] == True]["ip"].head(n)
+        df = BlocklistFileManager.load_processed_df()
+
+        now = datetime.now(timezone.utc)
+        outdated = (df["upload_date"].isna() | ((now - df["upload_date"]) > pd.Timedelta(days=threshold)))
+
+        active_ips = df[(df["active"] == True) & (outdated)]["ip"].head(n)
 
         return active_ips.tolist()
     
@@ -69,10 +73,8 @@ class BlocklistFileManager:
 
         tags = [label["value"] for label in observable["objectLabel"]]
 
-        #df = pd.read_csv(PROCESSED_IP_FILE)
         df = BlocklistFileManager.load_processed_df()
         df.loc[df["ip"] == ip, "upload_date"] = str(pd.to_datetime(observable["updated_at"],utc=True,unit="s"))
-        df.loc[df["ip"] == ip, "standard_id"] = observable["standard_id"]
         df.loc[df["ip"] == ip, "stix_id"] = observable["standard_id"]
         df.loc[df["ip"] == ip, "score"] = observable['x_opencti_score']
         df.loc[df["ip"] == ip, "tags"] = ",".join(tags) if tags else None
@@ -88,13 +90,6 @@ class BlocklistFileManager:
         df["upload_date"] = df["upload_date"].astype(str)
         df['stix_id'] = df['stix_id'].astype(str)
         df["tags"] = df["tags"].astype("string").fillna("")
-
-
-        #df["upload_date"] = pd.to_datetime(
-        #    df["upload_date"],
-        #    errors="coerce",
-        #    utc=True
-        #)
 
         return df
 
@@ -135,10 +130,10 @@ class BlocklistFileManager:
         print("creating a new csv file...")
         df = (pd.read_csv(RAW_FILE, header=None, skip_blank_lines=True, names=["ip"]).drop_duplicates().reset_index(drop=True))
         df["active"] = True
-        df['stix_id'] = "None"
+        df['stix_id'] = None
         df['score'] = -1
-        df['tags'] = "None"
-        df["upload_date"] = "None"
+        df['tags'] = None
+        df["upload_date"] = None
 
         df.to_csv(PROCESSED_IP_FILE, index=False)
         if return_csv:return df
