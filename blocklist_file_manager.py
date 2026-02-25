@@ -60,6 +60,7 @@ class BlocklistFileManager:
         df = BlocklistFileManager.load_processed_df()
 
         now = datetime.now(timezone.utc)
+        df["upload_date"] = pd.to_datetime(df["upload_date"], errors="coerce", utc=True)
         outdated = (df["upload_date"].isna() | ((now - df["upload_date"]) > pd.Timedelta(days=threshold)))
 
         active_ips = df[(df["active"] == True) & (outdated)]["ip"].head(n)
