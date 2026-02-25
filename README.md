@@ -23,17 +23,18 @@ This project:
 
 ```_
 ip-enrichment/
-│
 ├── pyproject.toml
 ├── README.md
 ├── .gitignore
 │
-├── src/
+└── src/
     └── ip_enrichment/
         ├── cli.py
         ├── config.py
+        │
         ├── blocklist/
         │   └── manager.py
+        │
         └── opencti/
             └── manager.py
 ```
@@ -132,7 +133,7 @@ pip install -e .
 ip-enrichment --number_ips 10
 ```
 
-# CLI Arguments (TBD)
+# CLI Arguments
 
 | Argument     | Description                                   | Default |
 | ------------ | --------------------------------------------- | ------- |

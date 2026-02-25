@@ -31,5 +31,5 @@ dev = [
 ip-enrichment = "ip_enrichment.main:main"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["ip_enrichment*"]
