@@ -1,5 +1,5 @@
-from blocklist_file_manager import BlocklistFileManager as blocklist_manager
-from open_cti_manager import OpenCTIManager
+from src.ip_enrichment.blocklist.manager import BlocklistFileManager as blocklist_manager
+from src.ip_enrichment.opencti.manager import OpenCTIManager
 import argparse
 import time
 import logging
