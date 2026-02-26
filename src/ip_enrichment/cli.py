@@ -23,7 +23,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='IP Enrichment Script')
     parser.add_argument('--number_ips', type=int, default=10, help='Max number of IPs to process per run')
-    parser.add_argument('--wait_time', type=int, default=1, help='Wait time in minutes before retrieving data from APIs')
+    parser.add_argument('--wait_time', type=int, default=1, help='Wait time in minutes before retrieving data from APIs') # TODO: remove later and replace with dynamic wait based on enrichment status
     parser.add_argument('--threshold',type=int, default=30, help='Threshold in days for considering an IP outdated')
 
     args = parser.parse_args()
@@ -47,14 +47,12 @@ def main():
 
         observables.append(cti_manager.put_observable(observable_input, labels))
 
-    #print(f"waiting {args.wait_time} minutes to allow APIs to process IPs...")
     time.sleep(60*args.wait_time)
 
-    #print("retrieving data from APIs and updating local file...")
     for observable in observables:
 
         obs = cti_manager.get_observable_by_stix_id(observable['standard_id'])
-        blocklist_manager.update_ip_info(obs)
+        if obs is not None: blocklist_manager.update_ip_info(obs)
 
 if __name__ == "__main__":
     main()

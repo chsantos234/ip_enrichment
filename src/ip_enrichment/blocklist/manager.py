@@ -49,15 +49,16 @@ class BlocklistFileManager:
         if RAW_FILE_PATH.exists():
             local_text = RAW_FILE_PATH.read_text(encoding="utf-8")
             local_hash = BlocklistFileManager.sha256_from_text(local_text)
-        else: print("creating new local files...")
+        else: 
+            logger.info("Creating new local files.")
 
         if remote_hash != local_hash:
-            print('remote file has changed, updating local file...')
+            logger.info("Remote blocklist has changed. Updating local files.")
             RAW_FILE_PATH.write_text(remote_text, encoding="utf-8")
             FORMATTED_FILE_PATH.write_text(BlocklistFileManager.format_text(remote_text), encoding="utf-8")
             return True
         
-        print("local file is up to date")
+        logger.info("Local file is up to date.")
         return False
     
     @staticmethod
