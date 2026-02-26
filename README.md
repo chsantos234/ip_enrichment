@@ -138,7 +138,6 @@ ip-enrichment --number_ips 10
 | Argument     | Description                                   | Default |
 | ------------ | --------------------------------------------- | ------- |
 | --number_ips | Max number of IPs processed per run           | 10      |
-| --wait_time  | Minutes to wait before retrieving API results | 1       |
 | --threshold  | Days before an IP is considered outdated      | 30      |
 
 
