@@ -28,7 +28,7 @@ dev = [
 ]
 
 [project.scripts]
-ip-enrichment = "ip_enrichment.main:main"
+ip-enrichment = "ip_enrichment.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
