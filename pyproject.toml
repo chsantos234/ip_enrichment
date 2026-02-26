@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ip-enrichment"
+version = "0.1.0"
+description = "IP enrichment pipeline using OpenCTI and external blocklists"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [
+    { name = "Camilo Henrique Martins dos Santos" }
+]
+
+dependencies = [
+    "pycti==6.9.9",
+    "matplotlib",
+    "requests",
+    "pandas"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "ruff"
+]
+
+[project.scripts]
+ip-enrichment = "ip_enrichment.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ip_enrichment*"]

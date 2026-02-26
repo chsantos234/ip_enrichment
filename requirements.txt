@@ -1,4 +1,0 @@
-pycti==6.9.9
-matplotlib
-requests
-pandas
