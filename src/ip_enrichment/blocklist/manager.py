@@ -1,20 +1,11 @@
 import hashlib
+import logging
 import requests
 import pandas as pd
-#from pathlib import Path
-#from dotenv import dotenv_values
 from datetime import datetime, timezone
 
-import logging
 
 logger = logging.getLogger(__name__)
-
-# deprecated - moved to config.py
-#config = dotenv_values(".env")
-
-#RAW_FILE = Path(config["RAW_FILE_PATH"])
-#FORMATTED_FILE = Path(config["FORMATTED_FILE_PATH"])
-#PROCESSED_IP_FILE = Path(config["PROCESSED_IP_FILE_PATH"])
 
 
 from ip_enrichment.config import (
@@ -40,9 +31,16 @@ class BlocklistFileManager:
 
     @staticmethod
     def update_local_file() -> bool:
+        """
+        Fetch remote blocklist, compare with local IP file, and update if changed.
+        Return True if the file was updated, False otherwise.
+        """
         response = requests.get(BLOCKLIST_URL, timeout=30)
         response.raise_for_status()
         remote_text = response.text
+        if not remote_text.strip():
+            logger.warning("Remote blocklist is empty. Aborting update.")
+            return False
         remote_hash = BlocklistFileManager.sha256_from_text(remote_text)
         local_hash = None
 
@@ -53,9 +51,9 @@ class BlocklistFileManager:
             logger.info("Creating new local files.")
 
         if remote_hash != local_hash:
-            logger.info("Remote blocklist has changed. Updating local files.")
+            logger.info("Remote blocklist has changed. Updating local files.") # TODO: return new_ips (RAW_FILE_PATH)
             RAW_FILE_PATH.write_text(remote_text, encoding="utf-8")
-            FORMATTED_FILE_PATH.write_text(BlocklistFileManager.format_text(remote_text), encoding="utf-8")
+            FORMATTED_FILE_PATH.write_text(BlocklistFileManager.format_text(remote_text), encoding="utf-8") # only exists for cdb lists
             return True
         
         logger.info("Local file is up to date.")
@@ -84,6 +82,9 @@ class BlocklistFileManager:
 
     @staticmethod
     def update_ip_info(observable: dict) -> None:
+        """
+        Uptade local CSV file with enrichment info from OpenCTI observable.
+        """
         ip = observable["observable_value"]
 
         tags = [label["value"] for label in observable["objectLabel"]]
@@ -93,6 +94,7 @@ class BlocklistFileManager:
         df.loc[df["ip"] == ip, "stix_id"] = observable["standard_id"]
         df.loc[df["ip"] == ip, "score"] = observable['x_opencti_score']
         df.loc[df["ip"] == ip, "tags"] = ",".join(tags) if tags else None
+        df.loc[df["ip"] == ip, "external_references"] = [reference['source_name'] for reference in observable["externalReferences"]]
 
         df.to_csv(PROCESSED_IP_FILE_PATH, index=False)
 
@@ -105,6 +107,7 @@ class BlocklistFileManager:
         df["upload_date"] = df["upload_date"].astype(str)
         df['stix_id'] = df['stix_id'].astype(str)
         df["tags"] = df["tags"].astype("string").fillna("")
+        df["external_references"] = df["external_references"].astype("string").fillna("")
 
         return df
 
@@ -112,8 +115,8 @@ class BlocklistFileManager:
     @staticmethod
     def update_local_csv(return_csv : bool=False) -> pd.DataFrame | None:
         """
-        Fetch remote blocklist, compare with local file, and update if changed.
-        If `return_csv` is True, return the updated DataFrame.
+        Fetch remote blocklist, compare with local csv file, and update if changed.
+        If `return_csv` is True, return the updated csv DataFrame.
         """
         updated = BlocklistFileManager.update_local_file()
 
@@ -124,6 +127,11 @@ class BlocklistFileManager:
                 logger.info("Remote blocklist has changed. Updating local CSV file.")
                 
                 new_ips = pd.read_csv(RAW_FILE_PATH, header=None, names=["ip"])
+
+                if new_ips.empty:
+                    logger.warning("No IPs found in the new blocklist.")
+                    return df if return_csv else None
+
                 new_ips["active"] = True
                 new_ips["upload_date"] = None
                 
@@ -143,8 +151,11 @@ class BlocklistFileManager:
                     df.loc[df["ip"].isin(ips_to_reactivate), "active"] = True
 
                 df.to_csv(PROCESSED_IP_FILE_PATH, index=False)
+                logger.info(f"IPs deactivated: {len(ips_to_deactivate)}")
+                logger.info(f"IPs reactivated: {len(ips_to_reactivate)}")
+
             logger.info("CSV file is up to date.")
-            return
+            return df if return_csv else None
         
         logger.info("Creating a new processed IP CSV file.")
         df = (pd.read_csv(RAW_FILE_PATH, header=None, skip_blank_lines=True, names=["ip"]).drop_duplicates().reset_index(drop=True))
@@ -153,6 +164,7 @@ class BlocklistFileManager:
         df['score'] = -1
         df['tags'] = None
         df["upload_date"] = None
+        df["external_references"] = None
 
         df.to_csv(PROCESSED_IP_FILE_PATH, index=False)
-        if return_csv:return df
+        return df if return_csv else None

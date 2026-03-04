@@ -1,7 +1,4 @@
 from pycti import OpenCTIApiClient, StixCyberObservable
-#from dotenv import dotenv_values
-
-
 from ip_enrichment.config import (
     OPENCTI_URL,
     OPENCTI_TOKEN
@@ -9,9 +6,7 @@ from ip_enrichment.config import (
 
 
 class OpenCTIManager:
-    def __init__(self, env_path: str = ".env"):
-        #config = dotenv_values(env_path) - deprecated - moved to config.py
-
+    def __init__(self):
         self.client = OpenCTIApiClient(
             url=OPENCTI_URL,
             token=OPENCTI_TOKEN
@@ -26,7 +21,7 @@ class OpenCTIManager:
     def post_label(self,
         label_value: str,
         label_color: str
-    ) -> dict:
+    ) -> dict | None:
         """
         Create a label in OpenCTI.
         """
@@ -53,7 +48,6 @@ class OpenCTIManager:
             objectLabel=labels or [],
             update=update
         )
-
 
     def get_observable_by_value(self, #TODO: fix
         value: str

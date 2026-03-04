@@ -1,9 +1,9 @@
-from ip_enrichment.blocklist.manager import BlocklistFileManager as blocklist_manager
-from ip_enrichment.opencti.manager import OpenCTIManager
-import argparse
 import time
 import logging
+import argparse
 from datetime import datetime, timezone
+from ip_enrichment.opencti.manager import OpenCTIManager
+from ip_enrichment.blocklist.manager import BlocklistFileManager as blocklist_manager
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +22,20 @@ def wait_for_enrichment(cti_manager, stix_id, timeout=61):
 
 
 def main():
-    logging.basicConfig(filename='enrichment.log', level=logging.INFO)
+    #logging.basicConfig(filename='enrichment.log', level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        handlers=[
+            logging.FileHandler("enrichment.log"),
+            logging.StreamHandler()
+        ]
+    )
 
     parser = argparse.ArgumentParser(description='IP Enrichment Script')
     parser.add_argument('--number_ips', type=int, default=10, help='Max number of IPs to process per run')
-    #parser.add_argument('--wait_time', type=int, default=1, help='Wait time in minutes before retrieving data from APIs')
     parser.add_argument('--threshold',type=int, default=30, help='Threshold in days for considering an IP outdated')
+    #parser.add_argument('--wait_time', type=int, default=1, help='Wait time in minutes before retrieving data from APIs')
 
     args = parser.parse_args()
 
