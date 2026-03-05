@@ -8,21 +8,20 @@ from ip_enrichment.blocklist.manager import BlocklistFileManager as blocklist_ma
 logger = logging.getLogger(__name__)
 
 
-def wait_for_enrichment(cti_manager, stix_id, timeout=61):
+def wait_for_enrichment(cti_manager, stix_id, ip_value, timeout=60) -> dict | None:
     start = time.time()
     index = 1
     while time.time() - start < timeout:
         response = cti_manager.get_observable_by_stix_id(stix_id)
         if response['externalReferences'] != []:
             return response
-        logger.info(f"Waiting for enrichment of {stix_id} (attempt {index})")
+        logger.info(f"Waiting for enrichment of {ip_value} - {stix_id} (attempt {index})")
         time.sleep(10)
         index += 1
     return None
 
 
 def main():
-    #logging.basicConfig(filename='enrichment.log', level=logging.INFO)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -38,8 +37,23 @@ def main():
     #parser.add_argument('--wait_time', type=int, default=1, help='Wait time in minutes before retrieving data from APIs')
 
     args = parser.parse_args()
+    #logger.info(f"{datetime.now(timezone.utc)} - Script started with parameters: number_ips={args.number_ips}, threshold={args.threshold}")
 
-    logger.info(f"{datetime.now(timezone.utc)} - Script started with parameters: number_ips={args.number_ips}, threshold={args.threshold}")
+    border = "=" * 70
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    header = (
+        f"\n\n"
+        f"{border}\n"
+        f"  SCRIPT STARTED\n"
+        f"  Timestamp  : {timestamp}\n"
+        f"  number_ips : {args.number_ips}\n"
+        f"  threshold  : {args.threshold}\n"
+        f"{border}"
+        f"\n\n"
+    )
+
+    logger.info(header)
 
     df = blocklist_manager.update_local_csv(return_csv=True)
     cti_manager = OpenCTIManager()
@@ -48,6 +62,7 @@ def main():
     logger.info(f'{active_ips}')
 
     observables = []
+    observable_ips = []
 
     for ip in active_ips:
         try:
@@ -61,11 +76,12 @@ def main():
                 continue
 
             observables.append(observable)
+            observable_ips.append(ip)
         except Exception as e:
             logger.warning(f"Error creating/updating observable for {ip}: {e}")
 
-    for observable in observables:
-        response =  wait_for_enrichment(cti_manager, observable['standard_id'])
+    for i, observable in enumerate(observables):
+        response =  wait_for_enrichment(cti_manager, observable['standard_id'], observable_ips[i])
 
         if not response:
             logger.warning(f"Timeout waiting for enrichment of {observable['standard_id']}")

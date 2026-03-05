@@ -98,6 +98,10 @@ class BlocklistFileManager:
 
     @staticmethod
     def load_processed_df() -> pd.DataFrame:
+        """
+        Load the processed IP CSV file into a DataFrame with correct data types.
+        Might Delete Later
+        """
         df = pd.read_csv(PROCESSED_IP_FILE_PATH)
 
         df["active"] = df["active"].astype(bool)
