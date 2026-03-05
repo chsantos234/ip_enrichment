@@ -3,17 +3,14 @@ import logging
 import requests
 import pandas as pd
 from datetime import datetime, timezone
-
-
-logger = logging.getLogger(__name__)
-
-
 from ip_enrichment.config import (
     BLOCKLIST_URL,
     RAW_FILE_PATH,
     FORMATTED_FILE_PATH,
     PROCESSED_IP_FILE_PATH,
 )
+
+logger = logging.getLogger(__name__)
 
 class BlocklistFileManager:
     @staticmethod
@@ -51,7 +48,7 @@ class BlocklistFileManager:
             logger.info("Creating new local files.")
 
         if remote_hash != local_hash:
-            logger.info("Remote blocklist has changed. Updating local files.") # TODO: return new_ips (RAW_FILE_PATH)
+            logger.info("Remote blocklist has changed. Updating local files.") # TODO: return RAW_FILE_PATH for comparison of old and new IPs
             RAW_FILE_PATH.write_text(remote_text, encoding="utf-8")
             FORMATTED_FILE_PATH.write_text(BlocklistFileManager.format_text(remote_text), encoding="utf-8") # only exists for cdb lists
             return True
@@ -94,7 +91,8 @@ class BlocklistFileManager:
         df.loc[df["ip"] == ip, "stix_id"] = observable["standard_id"]
         df.loc[df["ip"] == ip, "score"] = observable['x_opencti_score']
         df.loc[df["ip"] == ip, "tags"] = ",".join(tags) if tags else None
-        df.loc[df["ip"] == ip, "external_references"] = [reference['source_name'] for reference in observable["externalReferences"]]
+        df.loc[df["ip"] == ip, "external_references"] = ",".join(ref['source_name'] for ref in observable['externalReferences'])
+
 
         df.to_csv(PROCESSED_IP_FILE_PATH, index=False)
 

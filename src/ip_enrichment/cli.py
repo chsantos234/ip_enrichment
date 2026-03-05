@@ -61,7 +61,6 @@ def main():
                 continue
 
             observables.append(observable)
-
         except Exception as e:
             logger.warning(f"Error creating/updating observable for {ip}: {e}")
 
