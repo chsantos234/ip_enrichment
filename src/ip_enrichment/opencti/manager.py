@@ -49,15 +49,38 @@ class OpenCTIManager:
             update=update
         )
 
-    def get_observable_by_value(self, #TODO: fix
-        value: str
+    #def get_observable_by_value(self,
+    #    value: str
+    #) -> dict | None:
+    #    """
+    #    Retrieve observable by value.
+    #    """
+    #    return self.observable.read(
+    #        filters=[{"key": "value", "values": [value]}]
+    #    )
+
+
+    def get_ipv4_observable_by_value(self,
+        ipv4: str
     ) -> dict | None:
         """
-        Retrieve observable by value.
+        Retrieve IPv4 observable by value.
         """
-        return self.observable.read(
-            filters=[{"key": "value", "values": [value]}]
-        )
+        observables = self.observable.list(
+        filters={
+            "mode": "and",
+            "filters": [
+                {"key": "entity_type", "values": ["IPv4-Addr"]},
+                {"key": "value", "values": [ipv4]},
+            ],
+            "filterGroups": [],
+        },
+        first=1
+    )
+
+        return observables[0] if observables else None
+
+
 
     def get_observable_by_stix_id(self,
         stix_id: str
